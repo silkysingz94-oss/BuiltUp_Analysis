@@ -1,687 +1,921 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GBoS GEOAI | Census & Built-Up Expansion</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GBoS GEOAI | Census EA & Built-up Expansion</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.11.0/proj4.js"></script>
 
 <style>
-:root{--green:#087443;--dark:#064e32;--yellow:#f2c94c;--red:#c73535;--ink:#18251f;--muted:#64736b;--line:#dce5df;--bg:#f0f4f1}
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;font-family:Arial,sans-serif;color:var(--ink)}
-body{display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
-header{min-height:66px;display:flex;align-items:center;gap:14px;padding:10px 18px;color:#fff;background:linear-gradient(110deg,var(--dark),var(--green));border-bottom:4px solid var(--yellow)}
-.flag{width:42px;height:27px;border:1px solid #ddd;flex:none;background:linear-gradient(to bottom,#ce1126 0 30%,white 30% 37%,#0c8b48 37% 66%,white 66% 73%,#0c8b48 73% 100%)}
-.brand h1{font-size:18px;margin:0 0 4px}.brand p{font-size:11px;margin:0;opacity:.88}
-.header-right{margin-left:auto;text-align:right;font-size:11px;line-height:1.6}
-.status-pill{display:inline-block;border:1px solid #ffffff75;border-radius:20px;padding:4px 9px}
-main{display:grid;grid-template-columns:minmax(270px,1fr) minmax(350px,1fr) minmax(290px,1fr);gap:8px;padding:8px;flex:1;min-height:0}
-.panel{background:#fff;border:1px solid var(--line);border-radius:9px;min-width:0;min-height:0;overflow:auto;box-shadow:0 2px 7px #183d2410}
-.panel-title{position:sticky;top:0;z-index:500;background:#fff;padding:13px 14px;font-size:13px;font-weight:bold;border-bottom:1px solid var(--line);color:var(--dark)}
-.panel-content{padding:12px}.section{margin-bottom:16px}.section h3{font-size:12px;margin:0 0 9px;text-transform:uppercase;letter-spacing:.5px}
-label{display:block;font-size:11px;font-weight:bold;margin:9px 0 5px;color:#45574c}
-select,input[type=file],input[type=text]{width:100%;min-width:0;padding:9px;border:1px solid #cbd8cf;background:#fff;border-radius:5px;font-size:12px}
-input[type=file]{padding:7px}
-button{border:0;border-radius:5px;padding:9px 10px;cursor:pointer;font-size:11px;font-weight:bold;background:var(--green);color:#fff}
-button:hover{filter:brightness(.93)}button.secondary{background:#e7eee9;color:#244534;border:1px solid #d4e0d7}
-button:disabled{opacity:.55;cursor:wait}
-.btn-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}.btn-row button{flex:1}
-.small{font-size:11px;color:var(--muted);line-height:1.5}
-hr{border:0;border-top:1px solid var(--line);margin:13px 0}
-#mapPanel{display:flex;flex-direction:column;overflow:hidden}
-.map-toolbar{display:flex;flex-wrap:wrap;gap:5px;padding:8px;border-bottom:1px solid var(--line)}
-.map-toolbar button{padding:7px}
-#map{flex:1;min-height:240px;background:#dce8df;width:100%}
-.legend{border-top:1px solid var(--line);padding:10px 12px;background:#fff;font-size:11px}
-.legend-title{font-weight:bold;margin-bottom:7px}
-.legend-item{display:inline-flex;align-items:center;gap:5px;margin:3px 12px 3px 0}
-.swatch{width:12px;height:12px;display:inline-block;border:1px solid #777}
-.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.kpi{border:1px solid var(--line);background:#f7faf8;padding:11px;border-radius:7px}
-.kpi .label{font-size:10px;color:var(--muted);margin-bottom:7px}
-.kpi .value{font-size:21px;font-weight:bold;color:var(--dark);overflow-wrap:anywhere}
-.kpi .sub{font-size:10px;color:var(--muted);margin-top:5px}
-.chart-box{height:210px;margin:12px 0 18px;position:relative}
-.notice{padding:9px;border-radius:6px;background:#eef6f0;border-left:3px solid var(--green);font-size:11px;line-height:1.5;overflow-wrap:anywhere}
-.warning{background:#fff7e2;border-left-color:#d6a100}.error{background:#fff0f0;border-left-color:var(--red)}
-.checkrow{display:flex;gap:7px;align-items:center;font-size:11px;margin:9px 0}
-.checkrow input{accent-color:var(--green)}
-#loadStatus{font-size:11px;line-height:1.55;white-space:pre-line}
-#fieldInfo{white-space:pre-line;overflow-wrap:anywhere}
-footer{background:#fff;border-top:1px solid var(--line);padding:7px 12px;font-size:10px;color:#64736b;text-align:center}
-.leaflet-popup-content{max-height:250px;overflow:auto}
-.leaflet-popup-content table{border-collapse:collapse;font-size:11px}
-.leaflet-popup-content td{padding:3px;border-bottom:1px solid #eee;overflow-wrap:anywhere}
-@media(max-width:1000px){
- body{height:auto;min-height:100%;overflow:auto}
- main{grid-template-columns:1fr}
- .panel{min-height:300px}
- #mapPanel{height:650px;min-height:550px}
- #map{min-height:380px}
- header{flex-wrap:wrap}
- .header-right{margin-left:0;text-align:left}
+:root {
+  --green:#08783e;
+  --dark:#12352a;
+  --gold:#e5b739;
+  --bg:#f2f5f3;
+  --border:#d8e2dc;
+  --text:#21352b;
+  --muted:#63746b;
+  --red:#b72e37;
+}
+* {box-sizing:border-box}
+body {
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  color:var(--text);
+  background:var(--bg);
+}
+header {
+  background:linear-gradient(110deg,#07552d,#08783e,#0b6544);
+  color:white;
+  padding:15px 20px;
+  border-bottom:5px solid var(--gold);
+}
+.headerline {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.brand {font-size:23px;font-weight:800;letter-spacing:.4px}
+.subtitle {font-size:12px;margin-top:5px;color:#e3f1e8}
+.flag {
+  display:inline-flex;
+  width:39px;height:24px;
+  flex-direction:column;
+  overflow:hidden;
+  border:1px solid #ffffff88;
+  vertical-align:middle;
+  margin-right:8px;
+}
+.flag span {height:33.333%}
+.flag .r {background:#ce1126}
+.flag .b {background:#fff}
+.flag .g {background:#3a7728}
+.flag .line {height:2px;background:#0c4d9a}
+.header-tag {
+  background:#ffffff1b;
+  padding:9px 12px;
+  border-radius:7px;
+  font-size:12px;
+}
+main {padding:12px}
+.toolbar {
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin-bottom:12px;
+}
+button,.button {
+  border:0;border-radius:6px;padding:9px 12px;
+  font-weight:700;cursor:pointer;font-size:12px;
+}
+.primary {background:var(--green);color:white}
+.secondary {background:#e4eee8;color:var(--dark);border:1px solid var(--border)}
+.warning {background:#fff0d0;color:#674b00}
+.danger {background:#fbe5e6;color:#8b1e28}
+button:hover {filter:brightness(.96)}
+.layout {
+  display:grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);
+  gap:12px;
+  align-items:stretch;
+}
+.panel {
+  background:#fff;border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;min-width:0;
+  box-shadow:0 2px 8px #183b2510;
+}
+.panel-title {
+  margin:0;padding:12px 14px;background:#edf5ef;
+  color:var(--dark);border-bottom:1px solid var(--border);
+  font-size:14px;font-weight:800;
+}
+.panel-content {padding:12px;overflow-y:auto;max-height:calc(100vh - 205px)}
+.field {margin-bottom:12px}
+label {
+  display:block;font-size:11px;font-weight:800;
+  color:#4e6256;margin-bottom:5px;
+}
+input,select {
+  width:100%;padding:9px;border:1px solid #cbd8d0;
+  border-radius:6px;background:white;color:var(--text);
+  font-size:12px;
+}
+input[type="checkbox"] {width:auto;vertical-align:middle}
+.checkrow {
+  display:flex;gap:7px;align-items:center;margin:9px 0;
+  font-size:12px;
+}
+.checkrow label {margin:0;font-weight:600;display:inline}
+.hint {font-size:11px;color:var(--muted);line-height:1.5}
+.status {
+  padding:10px;border-radius:7px;background:#edf5ef;
+  border-left:4px solid var(--green);font-size:11px;
+  line-height:1.5;overflow-wrap:anywhere;margin-bottom:12px;
+}
+.status.error {background:#fff0f0;border-color:var(--red);color:#7d2229}
+.status.warn {background:#fff6df;border-color:#d59a14;color:#735400}
+.data-status {font-size:11px;line-height:1.6;margin:8px 0}
+.data-status .ok {color:#08783e}
+.data-status .bad {color:#b72e37}
+hr {border:0;border-top:1px solid #e2e9e4;margin:14px 0}
+#map {height:calc(100vh - 250px);min-height:460px;width:100%;background:#e5e9e5}
+.mapwrap {position:relative}
+.legend {
+  position:relative;z-index:500;background:white;
+  border-top:1px solid var(--border);padding:10px 12px;
+  font-size:11px;display:flex;flex-wrap:wrap;gap:12px;
+}
+.legend-item {display:flex;align-items:center;gap:6px}
+.swatch {width:17px;height:12px;border:1px solid #777;display:inline-block}
+.kpis {display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi {background:#f5f8f6;border:1px solid #e1e9e3;padding:10px;border-radius:8px}
+.kpi .value {font-size:21px;font-weight:800;color:var(--green);overflow-wrap:anywhere}
+.kpi .label {font-size:10px;color:var(--muted);margin-top:5px}
+.chartbox {height:220px;margin:10px 0 18px}
+.smalltitle {font-size:12px;font-weight:800;margin:13px 0 8px}
+table {width:100%;border-collapse:collapse;font-size:11px}
+th,td {padding:7px 5px;border-bottom:1px solid #e5ebe7;text-align:left}
+th {background:#f3f7f4}
+#loading {display:none;color:var(--green);font-size:11px;font-weight:700}
+footer {padding:13px;text-align:center;font-size:10px;color:var(--muted)}
+.leaflet-control-layers {font-size:12px}
+@media(max-width:1100px) {
+  .layout {grid-template-columns:1fr}
+  .panel-content {max-height:none}
+  #map {height:62vh;min-height:380px}
 }
 </style>
 </head>
-<body>
 
+<body>
 <header>
- <div class="flag" aria-label="The Gambia flag"></div>
- <div class="brand">
-  <h1>🇬🇲 GBoS GEOAI</h1>
-  <p>Census Geography • Built-Up Expansion • SDG 11 Screening</p>
- </div>
- <div class="header-right">
-  <span class="status-pill" id="headerStatus">Connecting to GitHub…</span><br>
-  GIS / Cartography Unit | Research and educational use
- </div>
+  <div class="headerline">
+    <div>
+      <div class="brand">
+        <span class="flag" aria-label="The Gambia flag">
+          <span class="r"></span><span class="b"></span>
+          <span class="line"></span><span class="g"></span>
+        </span>
+        GBoS GEOAI
+      </div>
+      <div class="subtitle">CENSUS ENUMERATION AREAS & BUILT-UP EXPANSION INTELLIGENCE</div>
+    </div>
+    <div class="header-tag">THE GAMBIA · 2013–2023 · GIS SCREENING</div>
+  </div>
 </header>
 
 <main>
-<section class="panel">
- <div class="panel-title">01 / CONTROLS & DATA</div>
- <div class="panel-content">
-
-  <div class="section">
-   <h3>Automatic data loading</h3>
-   <div class="notice" id="loadStatus">Starting…</div>
-   <div class="btn-row">
-    <button id="reloadBtn">Reload GitHub data</button>
-    <button id="resetBtn" class="secondary">Reset view</button>
-   </div>
-   <p class="small">Datasets are loaded from your public GitHub repository. Check the diagnostics if a layer fails.</p>
+  <div class="toolbar">
+    <button class="primary" id="loadBtn">Load GitHub datasets</button>
+    <button class="secondary" id="fitBtn">Zoom to data</button>
+    <button class="secondary" id="resetBtn">Reset filters</button>
+    <button class="secondary" id="eaExportBtn">Export filtered EAs</button>
+    <button class="secondary" id="csvExportBtn">Export summary CSV</button>
+    <span id="loading">Processing datasets…</span>
   </div>
 
-  <hr>
-  <div class="section">
-   <h3>GitHub dataset URLs</h3>
-   <label for="urlEA">Census EA GeoJSON</label>
-   <input id="urlEA" type="text" value="https://raw.githubusercontent.com/silkysingz94-oss/BuiltUp_Analysis/main/Census_EAs_Geo.geojson">
-
-   <label for="url2013">Built-Up 2013 JSON</label>
-   <input id="url2013" type="text" value="https://raw.githubusercontent.com/silkysingz94-oss/BuiltUp_Analysis/main/BuiltUp_Area2013.json">
-
-   <label for="url2023">Built-Up 2023 JSON</label>
-   <input id="url2023" type="text" value="https://raw.githubusercontent.com/silkysingz94-oss/BuiltUp_Analysis/main/BuiltUp_Area2023.json">
-
-   <div class="btn-row"><button id="saveUrlsBtn" class="secondary">Load these URLs</button></div>
+  <div id="globalStatus" class="status">
+    Ready. Load the public GitHub files or upload the datasets manually below.
   </div>
 
-  <hr>
-  <div class="section">
-   <h3>Manual upload fallback</h3>
-   <label for="fileEA">Census_EAs_Geo.geojson</label>
-   <input type="file" id="fileEA" accept=".json,.geojson,application/json">
-   <label for="file2013">BuiltUp_Area2013.json</label>
-   <input type="file" id="file2013" accept=".json,.geojson,application/json">
-   <label for="file2023">BuiltUp_Area2023.json</label>
-   <input type="file" id="file2023" accept=".json,.geojson,application/json">
-  </div>
+  <div class="layout">
+    <!-- LEFT COLUMN: CONTROLS -->
+    <section class="panel">
+      <h2 class="panel-title">01 · Data & Controls</h2>
+      <div class="panel-content">
 
-  <hr>
-  <div class="section">
-   <h3>Geographic filters</h3>
-   <label for="regionSelect">Region / administrative area</label>
-   <select id="regionSelect"><option value="">All regions</option></select>
-   <label for="districtSelect">District / LGA</label>
-   <select id="districtSelect"><option value="">All districts</option></select>
-   <label for="wardSelect">Ward</label>
-   <select id="wardSelect"><option value="">All wards</option></select>
-   <div class="btn-row">
-    <button id="applyFiltersBtn">Apply filters</button>
-    <button id="clearFiltersBtn" class="secondary">Clear filters</button>
-   </div>
-  </div>
+        <div class="smalltitle">GitHub dataset URLs</div>
+        <div class="field">
+          <label for="eaUrl">Census EA boundaries (GeoJSON)</label>
+          <input id="eaUrl" value= "https://raw.githubusercontent.com/silkysingz94-oss/BuiltUp_Analysis/main/Census_EAs_Geo.json">
+        </div>
+        <div class="field">
+          <label for="y13Url">Built-up 2013 (JSON/GeoJSON)</label>
+          <input id="y13Url" value="https://raw.githubusercontent.com/silkysingz94-oss/BuiltUp_Analysis/main/BuiltUp_Area2013.json">
+        </div>
+        <div class="field">
+          <label for="y23Url">Built-up 2023 (JSON/GeoJSON)</label>
+          <input id="y23Url" value="https://raw.githubusercontent.com/silkysingz94-oss/BuiltUp_Analysis/main/BuiltUp_Area2023.json">
+        </div>
+        <button class="primary" id="fetchBtn" style="width:100%">Fetch from URLs</button>
 
-  <hr>
-  <div class="section">
-   <h3>Map layers</h3>
-   <label class="checkrow"><input type="checkbox" id="showEA" checked> Census EA boundaries</label>
-   <label class="checkrow"><input type="checkbox" id="show2013" checked> Built-up 2013</label>
-   <label class="checkrow"><input type="checkbox" id="show2023" checked> Built-up 2023</label>
-   <label for="mapMode">Built-up display</label>
-   <select id="mapMode">
-    <option value="both">Compare 2013 and 2023</option>
-    <option value="2013">2013 only</option>
-    <option value="2023">2023 only</option>
-    <option value="change">Expansion / change overlay</option>
-    <option value="ea">EA boundaries only</option>
-   </select>
-  </div>
+        <hr>
+        <div class="smalltitle">Manual upload fallback</div>
+        <div class="field">
+          <label for="eaFile">Census EA file</label>
+          <input type="file" id="eaFile" accept=".json,.geojson,application/json">
+        </div>
+        <div class="field">
+          <label for="y13File">Built-up 2013 file</label>
+          <input type="file" id="y13File" accept=".json,.geojson,application/json">
+        </div>
+        <div class="field">
+          <label for="y23File">Built-up 2023 file</label>
+          <input type="file" id="y23File" accept=".json,.geojson,application/json">
+        </div>
+        <button class="secondary" id="uploadBtn" style="width:100%">Load selected local files</button>
+        <div class="hint" style="margin-top:7px">
+          Upload one or more files. A file selected here replaces only that dataset.
+          Files must contain GeoJSON or ArcGIS JSON features.
+        </div>
 
-  <hr>
-  <div class="section">
-   <h3>Export</h3>
-   <div class="btn-row">
-    <button id="exportSummaryBtn">Summary CSV</button>
-    <button id="exportEAButton" class="secondary">Filtered EA GeoJSON</button>
-   </div>
-   <div class="btn-row">
-    <button id="export13Btn" class="secondary">2013 GeoJSON</button>
-    <button id="export23Btn" class="secondary">2023 GeoJSON</button>
-   </div>
-  </div>
- </div>
-</section>
+        <hr>
+        <div class="smalltitle">Administrative filters</div>
+        <div class="field">
+          <label for="regionFilter">Region / LGA</label>
+          <select id="regionFilter"><option value="">All regions / LGAs</option></select>
+        </div>
+        <div class="field">
+          <label for="districtFilter">District</label>
+          <select id="districtFilter"><option value="">All districts</option></select>
+        </div>
+        <div class="field">
+          <label for="wardFilter">Ward</label>
+          <select id="wardFilter"><option value="">All wards</option></select>
+        </div>
 
-<section class="panel" id="mapPanel">
- <div class="panel-title">02 / INTERACTIVE MAP</div>
- <div class="map-toolbar">
-  <button data-base="street">Street</button>
-  <button data-base="satellite">Satellite</button>
-  <button data-base="terrain">Terrain</button>
-  <button data-base="dark">Dark</button>
-  <button id="zoomGambiaBtn" class="secondary">The Gambia</button>
-  <button id="fitDataBtn" class="secondary">Zoom to data</button>
- </div>
- <div id="map"></div>
- <div class="legend">
-  <div class="legend-title">MAP LEGEND</div>
-  <span class="legend-item"><span class="swatch" style="background:#2474c8"></span> Built-up 2013</span>
-  <span class="legend-item"><span class="swatch" style="background:#e04b38"></span> Built-up 2023</span>
-  <span class="legend-item"><span class="swatch" style="background:#e4b832"></span> Census EA boundary</span>
-  <span class="legend-item"><span class="swatch" style="background:#8a54bb"></span> Change overlay*</span>
-  <p class="small">*The change display overlays the two input dates; it does not calculate newly developed land unless spatial change geometries are provided.</p>
- </div>
-</section>
+        <hr>
+        <div class="smalltitle">Map layers</div>
+        <div class="checkrow"><input type="checkbox" id="showEA" checked><label for="showEA">Census EA boundaries</label></div>
+        <div class="checkrow"><input type="checkbox" id="show13" checked><label for="show13">Built-up footprint 2013</label></div>
+        <div class="checkrow"><input type="checkbox" id="show23" checked><label for="show23">Built-up footprint 2023</label></div>
+        <div class="checkrow"><input type="checkbox" id="showChange" checked><label for="showChange">Built-up expansion overlay</label></div>
 
-<section class="panel">
- <div class="panel-title">03 / GEOAI INTELLIGENCE & ANALYTICS</div>
- <div class="panel-content">
-  <div class="section">
-   <h3>Key indicators</h3>
-   <div class="kpis">
-    <div class="kpi"><div class="label">EA FEATURES</div><div class="value" id="kpiEA">—</div><div class="sub">Filtered enumeration areas</div></div>
-    <div class="kpi"><div class="label">BUILT-UP 2013</div><div class="value" id="kpi2013">—</div><div class="sub" id="kpi2013Sub">Geometry area</div></div>
-    <div class="kpi"><div class="label">BUILT-UP 2023</div><div class="value" id="kpi2023">—</div><div class="sub" id="kpi2023Sub">Geometry area</div></div>
-    <div class="kpi"><div class="label">NET DIFFERENCE</div><div class="value" id="kpiChange">—</div><div class="sub" id="kpiChangeSub">2013–2023</div></div>
-   </div>
+        <div class="field">
+          <label for="basemap">Basemap</label>
+          <select id="basemap">
+            <option value="osm">OpenStreetMap</option>
+            <option value="sat">Satellite imagery</option>
+            <option value="terrain">Terrain</option>
+            <option value="dark">Dark map</option>
+          </select>
+        </div>
+
+        <hr>
+        <div class="smalltitle">Dataset status</div>
+        <div id="datasetStatus" class="data-status">
+          <div class="bad">✗ Census EA boundaries: not loaded</div>
+          <div class="bad">✗ Built-up 2013: not loaded</div>
+          <div class="bad">✗ Built-up 2023: not loaded</div>
+        </div>
+        <div class="hint">
+          If GitHub fetch fails, open this page through GitHub Pages or VS Code Live Server.
+          Manual upload can be used as a workaround for remote access failures.
+        </div>
+      </div>
+    </section>
+
+    <!-- CENTER COLUMN: MAP -->
+    <section class="panel">
+      <h2 class="panel-title">02 · Interactive Map</h2>
+      <div class="mapwrap">
+        <div id="map"></div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:#f3cf35"></span>EA boundaries</div>
+          <div class="legend-item"><span class="swatch" style="background:#2986cc"></span>Built-up 2013</div>
+          <div class="legend-item"><span class="swatch" style="background:#df493e"></span>Built-up 2023</div>
+          <div class="legend-item"><span class="swatch" style="background:#8a48bd"></span>Expansion / overlap</div>
+        </div>
+      </div>
+      <div style="padding:10px 12px" class="hint">
+        Click an EA or built-up feature to inspect its attributes. Statistics are calculated from the loaded geometries.
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: ANALYTICS -->
+    <section class="panel">
+      <h2 class="panel-title">03 · GEOAI Intelligence</h2>
+      <div class="panel-content">
+        <div class="kpis">
+          <div class="kpi"><div class="value" id="kpiEA">0</div><div class="label">Filtered EAs</div></div>
+          <div class="kpi"><div class="value" id="kpi13">0</div><div class="label">2013 features</div></div>
+          <div class="kpi"><div class="value" id="kpi23">0</div><div class="label">2023 features</div></div>
+          <div class="kpi"><div class="value" id="kpiGrowth">—</div><div class="label">Feature-count change</div></div>
+          <div class="kpi"><div class="value" id="kpiArea13">—</div><div class="label">2013 area (km²)</div></div>
+          <div class="kpi"><div class="value" id="kpiArea23">—</div><div class="label">2023 area (km²)</div></div>
+        </div>
+
+        <div class="smalltitle">Built-up footprint comparison</div>
+        <div class="chartbox"><canvas id="areaChart"></canvas></div>
+
+        <div class="smalltitle">Feature count comparison</div>
+        <div class="chartbox"><canvas id="countChart"></canvas></div>
+
+        <div class="smalltitle">Data summary</div>
+        <table>
+          <tbody>
+            <tr><th>Metric</th><th>Value</th></tr>
+            <tr><td>Estimated area change</td><td id="areaChange">—</td></tr>
+            <tr><td>Estimated area change (%)</td><td id="areaChangePct">—</td></tr>
+            <tr><td>EA features loaded</td><td id="totalEA">0</td></tr>
+            <tr><td>Source projection</td><td id="projectionInfo">Not detected</td></tr>
+          </tbody>
+        </table>
+
+        <div class="smalltitle">Interpretation</div>
+        <div id="interpretation" class="status">
+          Load the three datasets to calculate the initial comparison.
+        </div>
+
+        <div class="hint">
+          Area calculations use geometry area in a geographic workflow. Treat the results as screening estimates:
+          overlapping polygons, different digitising methods, invalid geometries and source-date differences can affect results.
+          Feature counts are not equivalent to built-up area.
+        </div>
+      </div>
+    </section>
   </div>
-  <div class="section"><h3>Built-up area comparison</h3><div class="chart-box"><canvas id="areaChart"></canvas></div></div>
-  <div class="section"><h3>Dataset composition</h3><div class="chart-box"><canvas id="featureChart"></canvas></div></div>
-  <div class="section">
-   <h3>Data diagnostics</h3>
-   <div class="notice" id="diagnostics">Waiting for data…</div>
-   <p class="small" id="fieldInfo"></p>
-  </div>
-  <div class="section">
-   <h3>Methodology & limitations</h3>
-   <div class="notice warning">
-    Area is calculated from valid feature geometry using Turf.js. If the input uses projected coordinates, export it from QGIS or ArcGIS as GeoJSON in WGS 84 (EPSG:4326).
-    <br><br>Net area difference is not necessarily the newly developed land area. True change mapping requires spatial overlay between the 2013 and 2023 geometries.
-    <br><br>This is exploratory screening, not independent validation of source classifications or SDG 11 compliance.
-   </div>
-  </div>
- </div>
-</section>
 </main>
 
-<footer>Produced by Ansu Singhateh | GIS Analyst • GIS / Cartography Unit • GBoS GEOAI | Research and educational use</footer>
+<footer>
+  <strong>SILKYSINGZ GEOAI</strong> · Produced by Ansu Singhateh · HFT Stuttgart ·Unversity of Applied Sciences · Stuttgart · GIS-Cartography Unit, Gambia Bureau of Statistics
+  <br>Research and educational use. Validate source data, projection, geometry validity and area methodology before official publication.
+</footer>
 
 <script>
 "use strict";
 
-/* ==================== CONFIGURATION ==================== */
-const DATA = {ea:null,y2013:null,y2023:null};
-const LAYERS = {ea:null,y2013:null,y2023:null};
-let areaChart=null,featureChart=null;
-let baseLayers={};
-let activeFilters={region:"",district:"",ward:""};
-let isLoading=false;
+/* =========================================================
+   SILKYSINGZ GEOAI — DATA CONFIGURATION
+   Change these URLs if your filenames or repository differ.
+   Relative paths are recommended when all files are in the
+   same GitHub Pages directory.
+========================================================= */
 
-const $ = id => document.getElementById(id);
-const REGION_FIELDS=["region","regionname","rco","region_name","adm1_name","admin1","admin1name","region_1"];
-const DISTRICT_FIELDS=["district","distname","lganame","lga","districtname","district_name","admin2","adm2_name"];
-const WARD_FIELDS=["ward","wardname","ward_name","ward_name_1"];
+const DEFAULT_URLS = {
+  ea: "https://raw.githubusercontent.com/silkysingz94-oss/BuiltUp_Analysis/main/Census_EAs_Geo.geojson",
+  y13: "https://raw.githubusercontent.com/silkysingz94-oss/BuiltUp_Analysis/main/BuiltUp_Area2013.json",
+  y23: "https://raw.githubusercontent.com/silkysingz94-oss/BuiltUp_Analysis/main/BuiltUp_Area2023.json"
+};
 
-function setStatus(message,type=""){
-  $("loadStatus").textContent=message;
-  $("loadStatus").className="notice"+(type?" "+type:"");
-  $("headerStatus").textContent=type==="error"?"Dataset loading issue":type==="warning"?"Partial data / warning":message.startsWith("Complete")?"Datasets loaded":"Loading / checking data";
-}
-function escapeHtml(v){
-  return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-}
-function getUrls(){
-  return {ea:$("urlEA").value.trim(),y2013:$("url2013").value.trim(),y2023:$("url2023").value.trim()};
-}
-function isPlaceholder(url){
-  return !url||url.includes("YOUR_GITHUB_USERNAME")||url.includes("YOUR_REPOSITORY");
-}
+/* UTM zone 28N is EPSG:32628. */
+proj4.defs("EPSG:32628",
+  "+proj=utm +zone=28 +datum=WGS84 +units=m +no_defs +type=crs"
+);
 
-/* Check coordinate values recursively. GeoJSON must use longitude, latitude. */
-function validateCollection(fc,label="dataset"){
-  if(!fc||fc.type!=="FeatureCollection"||!Array.isArray(fc.features)){
-    throw new Error(label+": invalid FeatureCollection.");
-  }
-  let bad=0,valid=0,outside=0;
-  const output=[];
-  function visit(value,cb){
-    if(!Array.isArray(value))return;
-    if(value.length>=2&&typeof value[0]==="number"&&typeof value[1]==="number"){
-      cb(value);return;
-    }
-    value.forEach(v=>visit(v,cb));
-  }
-  for(const f of fc.features){
-    if(!f||!f.geometry||!f.geometry.coordinates){bad++;continue;}
-    let seen=false,coordsOK=true;
-    visit(f.geometry.coordinates,p=>{
-      seen=true;
-      const x=p[0],y=p[1];
-      if(!Number.isFinite(x)||!Number.isFinite(y)||Math.abs(x)>180||Math.abs(y)>90)coordsOK=false;
-      if(x < -18 || x > -10 || y < 10 || y > 15)outside++;
-    });
-    if(seen&&coordsOK){output.push(f);valid++}else bad++;
-  }
-  if(!valid)throw new Error(label+": no valid longitude/latitude geometries. Re-export as GeoJSON EPSG:4326.");
-  console.info("[GBoS GEOAI] "+label,{validFeatures:valid,invalidFeatures:bad,coordinatesOutsideApproximateGambiaRange:outside});
-  return {type:"FeatureCollection",features:output};
+const DATA = { ea:null, y13:null, y23:null };
+const SOURCE_INFO = { ea:"Not loaded", y13:"Not loaded", y23:"Not loaded" };
+const map = L.map("map", { preferCanvas:true }).setView([13.45,-16.58], 8);
+
+const baseLayers = {
+  osm: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom:19, attribution:"&copy; OpenStreetMap contributors"
+  }),
+  sat: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom:19, attribution:"Tiles &copy; Esri"
+  }),
+  terrain: L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+    maxZoom:17, attribution:"&copy; OpenTopoMap contributors"
+  }),
+  dark: L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    maxZoom:19, attribution:"&copy; OpenStreetMap &copy; CARTO"
+  })
+};
+baseLayers.osm.addTo(map);
+
+const overlayEA = L.geoJSON(null, {
+  style: {color:"#e8c02b",weight:1.2,fillColor:"#f3cf35",fillOpacity:.04},
+  onEachFeature: (f,l) => l.bindPopup(() => popupHTML(f,"Enumeration Area"))
+});
+const overlay13 = L.geoJSON(null, {
+  style: {color:"#1679c4",weight:1,fillColor:"#2986cc",fillOpacity:.36},
+  onEachFeature: (f,l) => l.bindPopup(() => popupHTML(f,"Built-up 2013"))
+});
+const overlay23 = L.geoJSON(null, {
+  style: {color:"#c72f35",weight:1,fillColor:"#df493e",fillOpacity:.34},
+  onEachFeature: (f,l) => l.bindPopup(() => popupHTML(f,"Built-up 2023"))
+});
+const overlayChange = L.geoJSON(null, {
+  style: {color:"#702da5",weight:1,fillColor:"#a26acb",fillOpacity:.55},
+  onEachFeature: (f,l) => l.bindPopup(() => popupHTML(f,"Built-up 2023 feature"))
+});
+const overlays = {
+  "Census EA boundaries":overlayEA,
+  "Built-up 2013":overlay13,
+  "Built-up 2023":overlay23,
+  "Built-up expansion overlay":overlayChange
+};
+Object.values(overlays).forEach(layer => layer.addTo(map));
+L.control.layers(baseLayers, overlays, {collapsed:true}).addTo(map);
+
+let areaChart = null;
+let countChart = null;
+let FILTERED_EA = [];
+let FILTERED_13 = [];
+let FILTERED_23 = [];
+let FILTERED_CHANGE = [];
+let lastProjection = "Not detected";
+
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[ch]));
 }
-
-/* Support GeoJSON plus common ArcGIS FeatureSet structures.
-   Projected ArcGIS coordinates are detected and rejected, not misplotted. */
-function extractGeoJSON(json,label="dataset"){
-  if(!json||typeof json!=="object")throw new Error(label+": response is not a JSON object.");
-  if(json.type==="FeatureCollection")return validateCollection(json,label);
-  if(json.type==="Feature")return validateCollection({type:"FeatureCollection",features:[json]},label);
-  if(json.geojson)return extractGeoJSON(json.geojson,label);
-  if(json.data&&json.data.type)return extractGeoJSON(json.data,label);
-
-  if(Array.isArray(json.features)){
-    const sr=json.spatialReference||json.features.find(f=>f.geometry?.spatialReference)?.geometry?.spatialReference;
-    const wkid=sr?.latestWkid||sr?.wkid;
-    if(wkid&&![4326,4269].includes(Number(wkid))){
-      throw new Error(label+": ArcGIS WKID "+wkid+" is projected. Export from GIS as GeoJSON EPSG:4326.");
-    }
-    const converted=[];
-    for(const item of json.features){
-      if(item?.type==="Feature"&&item.geometry){converted.push(item);continue;}
-      const g=item?.geometry;
-      if(!g)continue;
-      let geometry=null;
-      if(Array.isArray(g.rings)&&g.rings.length){
-        geometry={type:"Polygon",coordinates:g.rings};
-      }else if(Array.isArray(g.paths)&&g.paths.length){
-        geometry={type:g.paths.length===1?"LineString":"MultiLineString",coordinates:g.paths.length===1?g.paths[0]:g.paths};
-      }else if(Array.isArray(g.points)&&g.points.length){
-        geometry={type:"MultiPoint",coordinates:g.points};
-      }else if(Number.isFinite(g.x)&&Number.isFinite(g.y)){
-        geometry={type:"Point",coordinates:[g.x,g.y]};
-      }
-      if(geometry)converted.push({type:"Feature",properties:item.attributes||item.properties||{},geometry});
-    }
-    if(!converted.length)throw new Error(label+": no supported ArcGIS geometries found.");
-    return validateCollection({type:"FeatureCollection",features:converted},label);
-  }
-  throw new Error(label+": unsupported JSON structure. Export as GeoJSON FeatureCollection.");
+function popupHTML(feature, heading) {
+  const props = feature?.properties || {};
+  const rows = Object.entries(props).slice(0,18).map(([k,v]) =>
+    `<tr><td><b>${esc(k)}</b></td><td>${esc(typeof v==="object"?JSON.stringify(v):v)}</td></tr>`
+  ).join("");
+  return `<div style="max-height:260px;overflow:auto;min-width:190px">
+    <b>${esc(heading)}</b><table>${rows}</table></div>`;
 }
-
-async function fetchCollection(url,label){
-  if(isPlaceholder(url))throw new Error(label+": missing GitHub URL.");
-  let response;
-  try{response=await fetch(url,{cache:"no-store"});}
-  catch(e){throw new Error(label+": network error. Verify public URL and internet access.");}
-  if(!response.ok)throw new Error(label+": HTTP "+response.status+". Verify filename, branch and repository.");
-  let json;
-  try{json=await response.json();}
-  catch(e){throw new Error(label+": URL did not return valid JSON. Use the GitHub Raw URL.");}
-  return extractGeoJSON(json,label);
+function setStatus(message, type="") {
+  const el=document.getElementById("globalStatus");
+  el.className="status"+(type ? " "+type : "");
+  el.textContent=message;
 }
-
-async function loadAllFromGitHub(){
-  if(isLoading)return;
-  isLoading=true;
-  $("reloadBtn").disabled=true;
-  $("saveUrlsBtn").disabled=true;
-  setStatus("Loading datasets from GitHub…\nPlease wait.","");
-  const urls=getUrls();
-  const tasks=[
-    ["ea","Census EA",urls.ea],
-    ["y2013","Built-up 2013",urls.y2013],
-    ["y2023","Built-up 2023",urls.y2023]
+function setLoading(yes) {
+  document.getElementById("loading").style.display=yes?"inline":"none";
+}
+function datasetStatus() {
+  const items=[
+    ["ea","Census EA boundaries"],
+    ["y13","Built-up 2013"],
+    ["y23","Built-up 2023"]
   ];
-  const results=await Promise.allSettled(tasks.map(async t=>({key:t[0],data:await fetchCollection(t[2],t[1])})));
-  const lines=[];let successes=0;
-  results.forEach((r,i)=>{
-    const [key,label]=tasks[i];
-    if(r.status==="fulfilled"){
-      DATA[key]=r.value.data;successes++;
-      lines.push("✓ "+label+": "+DATA[key].features.length.toLocaleString()+" features");
-    }else{
-      lines.push("✗ "+r.reason.message);
-      console.error("[GBoS GEOAI]",label,r.reason);
-    }
-  });
-  try{
-    refreshAll();
-    if(successes===3){
-      setStatus("Complete — all three datasets loaded.\n"+lines.join("\n"),"");
-      fitToAvailableData();
-    }else if(successes>0){
-      setStatus("Partial load — "+successes+" of 3 datasets loaded.\n"+lines.join("\n"),"warning");
-      fitToAvailableData();
-    }else{
-      setStatus("No datasets loaded.\n"+lines.join("\n"),"error");
-    }
-  }catch(error){
-    console.error(error);
-    setStatus("Datasets loaded but display update failed: "+error.message,"error");
-  }finally{
-    isLoading=false;
-    $("reloadBtn").disabled=false;
-    $("saveUrlsBtn").disabled=false;
+  document.getElementById("datasetStatus").innerHTML=items.map(([key,label]) =>
+    DATA[key]
+      ? `<div class="ok">✓ ${label}: ${DATA[key].features.length.toLocaleString()} features</div>`
+      : `<div class="bad">✗ ${label}: not loaded</div>`
+  ).join("");
+  document.getElementById("totalEA").textContent=DATA.ea?.features.length.toLocaleString() || "0";
+  document.getElementById("projectionInfo").textContent=lastProjection;
+}
+function detectProjection(raw) {
+  const sr=raw?.spatialReference || raw?.crs?.properties || null;
+  if (!sr) return null;
+  if (typeof sr==="string") {
+    if (/32628|utm.*28/i.test(sr)) return "EPSG:32628";
+    if (/4326|crs84|wgs.?84/i.test(sr)) return "EPSG:4326";
   }
+  if (sr.latestWkid===32628 || sr.wkid===32628) return "EPSG:32628";
+  if (sr.latestWkid===4326 || sr.wkid===4326) return "EPSG:4326";
+  if (typeof sr.name==="string") {
+    if (/32628/i.test(sr.name)) return "EPSG:32628";
+    if (/4326|CRS84/i.test(sr.name)) return "EPSG:4326";
+  }
+  return null;
 }
-
-/* ==================== MAP ==================== */
-const map=L.map("map",{zoomControl:true,preferCanvas:true}).setView([13.45,-16.58],9);
-
-baseLayers.street=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"&copy; OpenStreetMap contributors",maxZoom:19});
-baseLayers.satellite=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{attribution:"Tiles &copy; Esri",maxZoom:19});
-baseLayers.terrain=L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{attribution:"&copy; OpenTopoMap contributors",maxZoom:17});
-baseLayers.dark=L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{attribution:"&copy; OpenStreetMap &copy; CARTO",maxZoom:19});
-baseLayers.street.addTo(map);
-
-document.querySelectorAll("[data-base]").forEach(b=>b.addEventListener("click",()=>setBase(b.dataset.base)));
-function setBase(name){
-  Object.values(baseLayers).forEach(layer=>{if(map.hasLayer(layer))map.removeLayer(layer);});
-  baseLayers[name].addTo(map);
+function toLonLat(coord, projection) {
+  if (!Array.isArray(coord) || coord.length<2) return coord;
+  const x=Number(coord[0]), y=Number(coord[1]);
+  if (!Number.isFinite(x)||!Number.isFinite(y)) return coord;
+  if (projection==="EPSG:32628" || (Math.abs(x)>180 && Math.abs(y)>90)) {
+    const converted=proj4("EPSG:32628","EPSG:4326",[x,y]);
+    return [converted[0],converted[1],...coord.slice(2)];
+  }
+  return coord;
 }
+function mapCoordinates(coords, projection) {
+  if (!Array.isArray(coords)) return coords;
+  if (coords.length>=2 && typeof coords[0]==="number") return toLonLat(coords,projection);
+  return coords.map(c=>mapCoordinates(c,projection));
+}
+function ringsToPolygon(rings) {
+  if (!Array.isArray(rings)||!rings.length) return null;
+  // ArcGIS polygon rings normally list exterior rings clockwise and holes
+  // counter-clockwise. Use signed ring orientation to group holes.
+  const signedArea = ring => {
+    let a=0;
+    for(let i=0,j=ring.length-1;i<ring.length;j=i++) {
+      a += (ring[j][0]*ring[i][1] - ring[i][0]*ring[j][1]);
+    }
+    return a/2;
+  };
+  const polygons=[];
+  let current=null;
+  for(const ring of rings) {
+    if(!Array.isArray(ring)||ring.length<4) continue;
+    const r=signedArea(ring);
+    if(!current || Math.sign(r)===Math.sign(signedArea(current[0]))) {
+      current=[ring];
+      polygons.push(current);
+    } else {
+      current.push(ring);
+    }
+  }
+  if(!polygons.length) return null;
+  return polygons.length===1
+    ? {type:"Polygon",coordinates:polygons[0]}
+    : {type:"MultiPolygon",coordinates:polygons};
+}
+function arcGeometryToGeoJSON(geometry, geometryType, projection) {
+  if(!geometry) return null;
+  if(geometry.type && geometry.coordinates) {
+    return {type:geometry.type,coordinates:mapCoordinates(geometry.coordinates,projection)};
+  }
+  if(Array.isArray(geometry.rings)) {
+    const g=ringsToPolygon(geometry.rings);
+    if(g) g.coordinates=mapCoordinates(g.coordinates,projection);
+    return g;
+  }
+  if(Array.isArray(geometry.paths)) {
+    const paths=geometry.paths.map(p=>mapCoordinates(p,projection));
+    return paths.length===1
+      ? {type:"LineString",coordinates:paths[0]}
+      : {type:"MultiLineString",coordinates:paths};
+  }
+  if(Array.isArray(geometry.points)) {
+    const pts=geometry.points.map(p=>toLonLat(p,projection));
+    return pts.length===1
+      ? {type:"Point",coordinates:pts[0]}
+      : {type:"MultiPoint",coordinates:pts};
+  }
+  if(Number.isFinite(geometry.x)&&Number.isFinite(geometry.y)) {
+    return {type:"Point",coordinates:toLonLat([geometry.x,geometry.y],projection)};
+  }
+  return null;
+}
+function normalizeDataset(raw, name) {
+  if(!raw) throw new Error(name+": empty response.");
+  const projection=detectProjection(raw);
+  if(projection) lastProjection=projection;
+  let fc;
 
-function featureProps(f){return f?.properties||{};}
-function firstValue(props,candidates){
+  if(raw.type==="FeatureCollection" && Array.isArray(raw.features)) {
+    fc={
+      type:"FeatureCollection",
+      features:raw.features.map(f=>({
+        type:"Feature",
+        properties:f.properties||{},
+        geometry:f.geometry ? {
+          type:f.geometry.type,
+          coordinates:mapCoordinates(f.geometry.coordinates,projection)
+        } : null
+      }))
+    };
+  } else if(raw.type==="Feature" && raw.geometry) {
+    fc={type:"FeatureCollection",features:[raw]};
+  } else {
+    const features=Array.isArray(raw)?raw:raw.features;
+    if(!Array.isArray(features)) {
+      throw new Error(name+": expected GeoJSON FeatureCollection or ArcGIS JSON FeatureSet.");
+    }
+    const geomType=raw.geometryType||"";
+    fc={
+      type:"FeatureCollection",
+      features:features.map(f=>{
+        const geometry=arcGeometryToGeoJSON(f.geometry,geomType,projection);
+        return {type:"Feature",properties:f.attributes||f.properties||{},geometry};
+      }).filter(f=>f.geometry)
+    };
+  }
+  fc.features=fc.features.filter(f=>f.geometry && f.geometry.type && f.geometry.coordinates);
+  if(!fc.features.length) throw new Error(name+": no usable geometries found.");
+  return fc;
+}
+async function fetchDataset(url,name) {
+  if(!url.trim()) throw new Error(name+": URL is empty.");
+  const target=new URL(url.trim(),window.location.href);
+  let response;
+  try {
+    response=await fetch(target.href,{cache:"no-store"});
+  } catch(err) {
+    throw new Error(name+": browser could not fetch this URL. Try GitHub Pages/Live Server or upload the file manually.");
+  }
+  if(!response.ok) throw new Error(name+": HTTP "+response.status+". Check repository, branch, path and filename.");
+  let json;
+  try { json=await response.json(); }
+  catch(err) { throw new Error(name+": response is not valid JSON.");
+  }
+  return normalizeDataset(json,name);
+}
+async function readLocalFile(file,name) {
+  if(!file) return null;
+  let raw;
+  try { raw=JSON.parse(await file.text()); }
+  catch(e) { throw new Error(name+": the selected file is not valid JSON."); }
+  return normalizeDataset(raw,name);
+}
+function getProp(props, candidates) {
   const keys=Object.keys(props||{});
-  for(const candidate of candidates){
+  for(const candidate of candidates) {
     const key=keys.find(k=>k.toLowerCase()===candidate.toLowerCase());
-    if(key&&props[key]!==null&&props[key]!==undefined&&String(props[key]).trim()!=="")return String(props[key]).trim();
+    if(key && props[key]!==null && props[key]!==undefined && props[key]!=="") return props[key];
   }
   return "";
 }
-function featureRegion(f){return firstValue(featureProps(f),REGION_FIELDS);}
-function featureDistrict(f){return firstValue(featureProps(f),DISTRICT_FIELDS);}
-function featureWard(f){return firstValue(featureProps(f),WARD_FIELDS);}
-
-function filteredFeatures(key){
-  if(!DATA[key])return [];
-  return DATA[key].features.filter(f=>{
-    // Geographic selectors are driven by the EA layer.
-    // Other layers are attribute-filtered if matching fields exist.
-    if(key==="ea"){
-      if(activeFilters.region&&featureRegion(f)!==activeFilters.region)return false;
-      if(activeFilters.district&&featureDistrict(f)!==activeFilters.district)return false;
-      if(activeFilters.ward&&featureWard(f)!==activeFilters.ward)return false;
-      return true;
+function regionValue(f) {
+  return getProp(f.properties,["RCO","region","region_name","lganame","LGA_NAME","LGA","admin1","adm1_name"]);
+}
+function districtValue(f) {
+  return getProp(f.properties,["distname","district","district_name","DISTRICT","admin2","adm2_name"]);
+}
+function wardValue(f) {
+  return getProp(f.properties,["wardname","ward","ward_name","WARD"]);
+}
+function uniqueSorted(values) {
+  return [...new Set(values.map(v=>String(v)).filter(v=>v.trim()!==""))]
+    .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+}
+function populateSelect(id, values, firstLabel) {
+  const el=document.getElementById(id), old=el.value;
+  el.innerHTML="";
+  const first=document.createElement("option");
+  first.value="";first.textContent=firstLabel;el.appendChild(first);
+  uniqueSorted(values).forEach(v=>{
+    const o=document.createElement("option");o.value=v;o.textContent=v;el.appendChild(o);
+  });
+  if([...el.options].some(o=>o.value===old)) el.value=old;
+}
+function refreshFilters() {
+  const features=DATA.ea?.features||[];
+  const r=document.getElementById("regionFilter").value;
+  const d=document.getElementById("districtFilter").value;
+  const regionRows=features.filter(f=>!r||String(regionValue(f))===r);
+  populateSelect("regionFilter",features.map(regionValue),"All regions / LGAs");
+  // Restore region after rebuilding its options.
+  document.getElementById("regionFilter").value=r;
+  populateSelect("districtFilter",regionRows.filter(f=>!r||String(regionValue(f))===r).map(districtValue),"All districts");
+  document.getElementById("districtFilter").value=d;
+  const selectedDistrict=document.getElementById("districtFilter").value;
+  const districtRows=regionRows.filter(f=>!selectedDistrict||String(districtValue(f))===selectedDistrict);
+  populateSelect("wardFilter",districtRows.map(wardValue),"All wards");
+}
+function getSelectedEA() {
+  const r=document.getElementById("regionFilter").value;
+  const d=document.getElementById("districtFilter").value;
+  const w=document.getElementById("wardFilter").value;
+  return (DATA.ea?.features||[]).filter(f=>
+    (!r||String(regionValue(f))===r) &&
+    (!d||String(districtValue(f))===d) &&
+    (!w||String(wardValue(f))===w)
+  );
+}
+function featureAreaKm2(f) {
+  try {
+    if(!f.geometry) return 0;
+    const area=turf.area(f);
+    return Number.isFinite(area)&&area>=0 ? area/1e6 : 0;
+  } catch(e) { return 0; }
+}
+function geometryIsInSelection(feature, selectedEA) {
+  if(!selectedEA.length) return false;
+  try {
+    const bbox=turf.bbox(feature);
+    for(const ea of selectedEA) {
+      if(!ea.geometry) continue;
+      const eb=turf.bbox(ea);
+      if(bbox[2]<eb[0]||bbox[0]>eb[2]||bbox[3]<eb[1]||bbox[1]>eb[3]) continue;
+      try { if(turf.booleanIntersects(feature,ea)) return true; } catch(e) {}
     }
-    const p=featureProps(f);
-    const region=firstValue(p,REGION_FIELDS);
-    const district=firstValue(p,DISTRICT_FIELDS);
-    const ward=firstValue(p,WARD_FIELDS);
-    if(activeFilters.region&&region&&region!==activeFilters.region)return false;
-    if(activeFilters.district&&district&&district!==activeFilters.district)return false;
-    if(activeFilters.ward&&ward&&ward!==activeFilters.ward)return false;
-    return true;
+  } catch(e) {}
+  return false;
+}
+function filterBuiltup(fc, selectedEA) {
+  if(!fc) return [];
+  if(!DATA.ea || !selectedEA.length) return fc.features.slice();
+  return fc.features.filter(f=>geometryIsInSelection(f,selectedEA));
+}
+function makeFeatureCollection(features) {
+  return {type:"FeatureCollection",features};
+}
+function getAreaTotal(features) {
+  return features.reduce((sum,f)=>sum+featureAreaKm2(f),0);
+}
+function fmt(n,d=2) {
+  return Number.isFinite(n) ? n.toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:d}) : "—";
+}
+function setKPI(id,value) { document.getElementById(id).textContent=value; }
+function chartOptions() {
+  return {
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{y:{beginAtZero:true,ticks:{font:{size:10}}},x:{ticks:{font:{size:10}}}}
+  };
+}
+function drawCharts(area13,area23,count13,count23) {
+  const areaData={
+    labels:["2013","2023"],
+    datasets:[{label:"Area (km²)",data:[area13,area23],backgroundColor:["#2986cc","#df493e"]}]
+  };
+  const countData={
+    labels:["2013","2023"],
+    datasets:[{label:"Feature count",data:[count13,count23],backgroundColor:["#2986cc","#df493e"]}]
+  };
+  if(areaChart) areaChart.destroy();
+  if(countChart) countChart.destroy();
+  areaChart=new Chart(document.getElementById("areaChart"),{
+    type:"bar",data:areaData,options:chartOptions()
+  });
+  countChart=new Chart(document.getElementById("countChart"),{
+    type:"bar",data:countData,options:chartOptions()
   });
 }
+function refreshAnalytics() {
+  const ea=getSelectedEA();
+  FILTERED_EA=ea;
+  FILTERED_13=filterBuiltup(DATA.y13,ea);
+  FILTERED_23=filterBuiltup(DATA.y23,ea);
+  const area13=getAreaTotal(FILTERED_13);
+  const area23=getAreaTotal(FILTERED_23);
+  const change=area23-area13;
+  const pct=area13 ? change/area13*100 : null;
+  const countChange=FILTERED_23.length-FILTERED_13.length;
+  const countPct=FILTERED_13.length ? countChange/FILTERED_13.length*100 : null;
 
-function styleFor(key){
-  if(key==="ea")return {color:"#d9a91b",weight:1.1,opacity:0.95,fillColor:"#e4b832",fillOpacity:0.025};
-  if(key==="y2013")return {color:"#2474c8",weight:1.1,opacity:0.95,fillColor:"#2474c8",fillOpacity:0.45};
-  return {color:"#e04b38",weight:1.1,opacity:0.95,fillColor:"#e04b38",fillOpacity:0.48};
-}
+  setKPI("kpiEA",ea.length.toLocaleString());
+  setKPI("kpi13",FILTERED_13.length.toLocaleString());
+  setKPI("kpi23",FILTERED_23.length.toLocaleString());
+  setKPI("kpiGrowth",countPct===null?"—":(countPct>=0?"+":"")+fmt(countPct,1)+"%");
+  setKPI("kpiArea13",DATA.y13?fmt(area13):"—");
+  setKPI("kpiArea23",DATA.y23?fmt(area23):"—");
+  document.getElementById("areaChange").textContent=(DATA.y13&&DATA.y23)?(change>=0?"+":"")+fmt(change)+" km²":"—";
+  document.getElementById("areaChangePct").textContent=pct===null?"—":(pct>=0?"+":"")+fmt(pct,1)+"%";
 
-function createLayer(key){
-  if(LAYERS[key]){
-    if(map.hasLayer(LAYERS[key]))map.removeLayer(LAYERS[key]);
-    LAYERS[key]=null;
+  FILTERED_CHANGE=FILTERED_23.filter(f=>geometryIsInSelection(f,ea));
+  overlayEA.clearLayers();overlay13.clearLayers();overlay23.clearLayers();overlayChange.clearLayers();
+  if(DATA.ea) overlayEA.addData(makeFeatureCollection(ea));
+  if(DATA.y13) overlay13.addData(makeFeatureCollection(FILTERED_13));
+  if(DATA.y23) overlay23.addData(makeFeatureCollection(FILTERED_23));
+  if(DATA.y23) overlayChange.addData(makeFeatureCollection(FILTERED_CHANGE));
+
+  overlayEA.setStyle({color:"#e8c02b",weight:1.2,fillColor:"#f3cf35",fillOpacity:.04});
+  overlay13.setStyle({color:"#1679c4",weight:1,fillColor:"#2986cc",fillOpacity:.36});
+  overlay23.setStyle({color:"#c72f35",weight:1,fillColor:"#df493e",fillOpacity:.34});
+  overlayChange.setStyle({color:"#702da5",weight:1,fillColor:"#a26acb",fillOpacity:.55});
+
+  overlayEA.setZIndex ? overlayEA.setZIndex(100) : null;
+  overlay13.setZIndex ? overlay13.setZIndex(200) : null;
+  overlay23.setZIndex ? overlay23.setZIndex(300) : null;
+  overlayChange.setZIndex ? overlayChange.setZIndex(400) : null;
+
+  syncLayers();
+  drawCharts(area13,area23,FILTERED_13.length,FILTERED_23.length);
+  if(!DATA.y13||!DATA.y23) {
+    document.getElementById("interpretation").textContent="Load both built-up datasets to compare the two years.";
+  } else if(area13===0) {
+    document.getElementById("interpretation").textContent="The 2013 area total is zero or unavailable. Verify that both datasets have valid polygon geometries and suitable projections.";
+  } else {
+    const phrase=change>0?"an increase":change<0?"a decrease":"no net change";
+    document.getElementById("interpretation").textContent=
+      "The selected area shows "+phrase+" of approximately "+fmt(Math.abs(change))+
+      " km² ("+fmt(Math.abs(pct),1)+"%) between the loaded datasets. This is a geometric area estimate, not a validated land-cover classification result.";
   }
-  if(!DATA[key])return;
-  const features=filteredFeatures(key);
-  const collection={type:"FeatureCollection",features};
-  LAYERS[key]=L.geoJSON(collection,{
-    style:()=>styleFor(key),
-    pointToLayer:(feature,latlng)=>{
-      const c=key==="ea"?"#d9a91b":key==="y2013"?"#2474c8":"#e04b38";
-      return L.circleMarker(latlng,{radius:key==="ea"?3.5:5,color:c,fillColor:c,fillOpacity:.8,weight:1});
-    },
-    onEachFeature:(feature,layer)=>{
-      const p=feature.properties||{};
-      const rows=Object.entries(p).slice(0,25).map(([k,v])=>"<tr><td><b>"+escapeHtml(k)+"</b></td><td>"+escapeHtml(v)+"</td></tr>").join("");
-      layer.bindPopup("<b>"+escapeHtml(key==="ea"?"Census EA":key==="y2013"?"Built-up 2013":"Built-up 2023")+"</b><table>"+rows+"</table>");
-    }
-  });
-  console.info("[GBoS GEOAI] Layer built:",key,"features:",features.length);
+  datasetStatus();
 }
-
-function applyDisplay(){
-  Object.values(LAYERS).forEach(layer=>{if(layer&&map.hasLayer(layer))map.removeLayer(layer);});
-  const mode=$("mapMode").value;
-  if(mode==="ea"){
-    if($("showEA").checked&&LAYERS.ea)LAYERS.ea.addTo(map);
+function syncLayers() {
+  const switches=[
+    ["showEA",overlayEA],["show13",overlay13],
+    ["show23",overlay23],["showChange",overlayChange]
+  ];
+  switches.forEach(([id,layer])=>{
+    if(document.getElementById(id).checked) {
+      if(!map.hasLayer(layer)) layer.addTo(map);
+    } else if(map.hasLayer(layer)) map.removeLayer(layer);
+  });
+}
+function zoomToData() {
+  const all=[];
+  [overlayEA,overlay13,overlay23].forEach(layer=>{
+    if(layer.getLayers().length) all.push(layer);
+  });
+  if(!all.length) {
+    map.setView([13.45,-16.58],8);
     return;
   }
-  if($("showEA").checked&&LAYERS.ea)LAYERS.ea.addTo(map);
-  if((mode==="both"||mode==="change"||mode==="2013")&&$("show2013").checked&&LAYERS.y2013)LAYERS.y2013.addTo(map);
-  if((mode==="both"||mode==="change"||mode==="2023")&&$("show2023").checked&&LAYERS.y2023)LAYERS.y2023.addTo(map);
+  const group=L.featureGroup(all);
+  try {
+    const bounds=group.getBounds();
+    if(bounds.isValid()) map.fitBounds(bounds,{padding:[20,20],maxZoom:15});
+  } catch(e) {}
 }
-
-function refreshMap(){
-  createLayer("ea");
-  createLayer("y2013");
-  createLayer("y2023");
-  applyDisplay();
-  setTimeout(()=>map.invalidateSize(),100);
-}
-
-function fitToAvailableData(){
-  const visible=Object.values(LAYERS).filter(l=>l&&l.getLayers().length>0);
-  if(!visible.length){console.warn("No drawable features found.");return;}
-  const group=L.featureGroup(visible);
-  const bounds=group.getBounds();
-  if(bounds.isValid()){
-    const center=bounds.getCenter();
-    if(!Number.isFinite(center.lat)||!Number.isFinite(center.lng)){
-      console.warn("Invalid map bounds; check coordinate reference system.");return;
-    }
-    map.fitBounds(bounds,{padding:[18,18],maxZoom:15});
-  }else{
-    console.warn("The layers have no valid geographic bounds.");
-  }
-  setTimeout(()=>map.invalidateSize(),150);
-}
-
-/* ==================== FILTERS ==================== */
-function fillSelect(id,values,placeholder,selected){
-  const select=$(id);
-  select.innerHTML="";
-  const empty=document.createElement("option");
-  empty.value="";empty.textContent=placeholder;select.appendChild(empty);
-  values.forEach(v=>{
-    const option=document.createElement("option");
-    option.value=v;option.textContent=v;select.appendChild(option);
-  });
-  select.value=values.includes(selected)?selected:"";
-}
-function syncFilters(){
-  const features=DATA.ea?DATA.ea.features:[];
-  const regions=[...new Set(features.map(featureRegion).filter(Boolean))].sort();
-  const districts=[...new Set(features.filter(f=>!activeFilters.region||featureRegion(f)===activeFilters.region).map(featureDistrict).filter(Boolean))].sort();
-  const wards=[...new Set(features.filter(f=>!activeFilters.region||featureRegion(f)===activeFilters.region).filter(f=>!activeFilters.district||featureDistrict(f)===activeFilters.district).map(featureWard).filter(Boolean))].sort();
-  fillSelect("regionSelect",regions,"All regions",activeFilters.region);
-  fillSelect("districtSelect",districts,"All districts",activeFilters.district);
-  fillSelect("wardSelect",wards,"All wards",activeFilters.ward);
-}
-
-/* ==================== ANALYTICS ==================== */
-function calculateAreaKm2(features){
-  let area=0,count=0,failed=0;
-  for(const f of features){
-    try{
-      if(!f.geometry)continue;
-      const a=turf.area(f);
-      if(Number.isFinite(a)&&a>=0){area+=a;count++}else failed++;
-    }catch(e){failed++;}
-  }
-  return {km2:area/1e6,count,failed};
-}
-function fmt(n,d=2){
-  return Number.isFinite(n)?n.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}):"—";
-}
-function updateCharts(eaCount,a13,a23){
-  if(!window.Chart){$("diagnostics").textContent="Chart.js did not load. Check your internet connection.";return;}
-  if(areaChart)areaChart.destroy();
-  if(featureChart)featureChart.destroy();
-  areaChart=new Chart($("areaChart"),{
-    type:"bar",
-    data:{labels:["2013","2023"],datasets:[{label:"Geometry area (km²)",data:[a13.km2,a23.km2],backgroundColor:["#2474c8","#e04b38"]}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,title:{display:true,text:"Area (km²)"}}}}
-  });
-  featureChart=new Chart($("featureChart"),{
-    type:"doughnut",
-    data:{labels:["Census EAs","Built-up 2013","Built-up 2023"],datasets:[{data:[eaCount,a13.count,a23.count],backgroundColor:["#d9a91b","#2474c8","#e04b38"]}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom"}}}
-  });
-}
-function refreshAnalytics(){
-  const ea=filteredFeatures("ea");
-  const y13=filteredFeatures("y2013");
-  const y23=filteredFeatures("y2023");
-  const a13=calculateAreaKm2(y13),a23=calculateAreaKm2(y23);
-  const delta=a23.km2-a13.km2;
-  const pct=a13.km2>0?delta/a13.km2*100:null;
-
-  $("kpiEA").textContent=ea.length.toLocaleString();
-  $("kpi2013").textContent=fmt(a13.km2);
-  $("kpi2013Sub").textContent=a13.count.toLocaleString()+" geometries • km²";
-  $("kpi2023").textContent=fmt(a23.km2);
-  $("kpi2023Sub").textContent=a23.count.toLocaleString()+" geometries • km²";
-  $("kpiChange").textContent=fmt(delta);
-  $("kpiChangeSub").textContent=pct===null?"Percent change unavailable":fmt(pct,1)+"% change in total geometry area";
-
-  updateCharts(ea.length,a13,a23);
-
-  const total=k=>DATA[k]?DATA[k].features.length:0;
-  $("diagnostics").innerHTML=
-    "<b>Loaded feature counts</b><br>Census EA: "+total("ea").toLocaleString()+
-    "<br>Built-up 2013: "+total("y2013").toLocaleString()+
-    "<br>Built-up 2023: "+total("y2023").toLocaleString()+
-    "<br><br><b>Displayed after filters</b><br>EA: "+ea.length.toLocaleString()+
-    "<br>2013: "+y13.length.toLocaleString()+
-    "<br>2023: "+y23.length.toLocaleString()+
-    "<br><br>Geometry area calculation failures: "+(a13.failed+a23.failed);
-
-  const fields=k=>{
-    const f=DATA[k]?.features?.[0];
-    return f?Object.keys(f.properties||{}).join(", "):"not loaded";
-  };
-  $("fieldInfo").textContent="EA fields: "+fields("ea")+"\n2013 fields: "+fields("y2013")+"\n2023 fields: "+fields("y2023");
-}
-function refreshAll(){
-  syncFilters();
-  refreshMap();
+function resetFilters() {
+  ["regionFilter","districtFilter","wardFilter"].forEach(id=>document.getElementById(id).value="");
+  refreshFilters();
   refreshAnalytics();
+  zoomToData();
 }
-
-/* ==================== LOCAL FILE UPLOADS ==================== */
-async function loadLocalFile(file,key,label){
-  if(!file)return;
-  try{
-    const json=JSON.parse(await file.text());
-    DATA[key]=extractGeoJSON(json,label);
-    refreshAll();
-    setStatus(label+" loaded from local file.\nFeatures: "+DATA[key].features.length.toLocaleString(),"");
-    fitToAvailableData();
-  }catch(e){
-    console.error(e);
-    setStatus("Could not load "+label+": "+e.message,"error");
-  }
-}
-$("fileEA").addEventListener("change",e=>loadLocalFile(e.target.files[0],"ea","Census EA"));
-$("file2013").addEventListener("change",e=>loadLocalFile(e.target.files[0],"y2013","Built-up 2013"));
-$("file2023").addEventListener("change",e=>loadLocalFile(e.target.files[0],"y2023","Built-up 2023"));
-
-/* ==================== EXPORTS ==================== */
-function downloadBlob(content,name,type){
-  const blob=new Blob([content],{type});
+function downloadFile(filename,content,mime="application/json") {
+  const blob=new Blob([content],{type:mime});
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
-  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();a.remove();
+  URL.revokeObjectURL(url);
 }
-function downloadGeoJSON(collection,name){
-  if(!collection)return alert("Dataset is not loaded.");
-  downloadBlob(JSON.stringify(collection,null,2),name,"application/geo+json");
+function exportEA() {
+  if(!FILTERED_EA.length) {setStatus("No filtered EA features available to export.","warn");return;}
+  downloadFile("GBoS_GEOAI_Filtered_Census_EAs.geojson",
+    JSON.stringify(makeFeatureCollection(FILTERED_EA),null,2));
 }
-function csvEscape(v){return '"'+String(v??"").replace(/"/g,'""')+'"';}
-function downloadSummary(){
-  const a13=calculateAreaKm2(filteredFeatures("y2013")).km2;
-  const a23=calculateAreaKm2(filteredFeatures("y2023")).km2;
+function exportSummary() {
   const rows=[
-    ["Indicator","Value","Unit"],
-    ["Filtered census EA features",filteredFeatures("ea").length,"features"],
-    ["Built-up 2013 geometry area",a13,"km²"],
-    ["Built-up 2023 geometry area",a23,"km²"],
-    ["Net difference in total geometry area",a23-a13,"km²"],
-    ["Selected region",activeFilters.region||"All",""],
-    ["Selected district",activeFilters.district||"All",""],
-    ["Selected ward",activeFilters.ward||"All",""],
-    ["Interpretation","Exploratory geometry-area comparison; not independently validated",""]
+    ["Metric","Value"],
+    ["Filtered EAs",FILTERED_EA.length],
+    ["Built-up features 2013",FILTERED_13.length],
+    ["Built-up features 2023",FILTERED_23.length],
+    ["Built-up area 2013 km2",getAreaTotal(FILTERED_13).toFixed(6)],
+    ["Built-up area 2023 km2",getAreaTotal(FILTERED_23).toFixed(6)],
+    ["Area change km2",(getAreaTotal(FILTERED_23)-getAreaTotal(FILTERED_13)).toFixed(6)],
+    ["Area change percent",getAreaTotal(FILTERED_13)?(((getAreaTotal(FILTERED_23)-getAreaTotal(FILTERED_13))/getAreaTotal(FILTERED_13))*100).toFixed(3):""],
+    ["Region/LGA",document.getElementById("regionFilter").value],
+    ["District",document.getElementById("districtFilter").value],
+    ["Ward",document.getElementById("wardFilter").value],
+    ["Projection note",lastProjection]
   ];
-  downloadBlob(rows.map(r=>r.map(csvEscape).join(",")).join("\r\n"),"GBoS_GEOAI_BuiltUp_Expansion_Summary.csv","text/csv;charset=utf-8");
+  const csv=rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");
+  downloadFile("GBoS_GEOAI_BuiltUp_Summary.csv",csv,"text/csv;charset=utf-8");
 }
-$("exportSummaryBtn").addEventListener("click",downloadSummary);
-$("exportEAButton").addEventListener("click",()=>downloadGeoJSON(DATA.ea?{type:"FeatureCollection",features:filteredFeatures("ea")}:null,"GBoS_Filtered_Census_EAs.geojson"));
-$("export13Btn").addEventListener("click",()=>downloadGeoJSON(DATA.y2013,"BuiltUp_Area2013.geojson"));
-$("export23Btn").addEventListener("click",()=>downloadGeoJSON(DATA.y2023,"BuiltUp_Area2023.geojson"));
+async function loadRemote() {
+  setLoading(true);
+  setStatus("Fetching datasets. You can still use local file upload if one of the URLs fails.");
+  const jobs=[
+    ["ea","Census EA",document.getElementById("eaUrl").value],
+    ["y13","Built-up 2013",document.getElementById("y13Url").value],
+    ["y23","Built-up 2023",document.getElementById("y23Url").value]
+  ];
+  const results=await Promise.all(jobs.map(async ([key,name,url])=>{
+    try { return {key,name,data:await fetchDataset(url,name)}; }
+    catch(e) { return {key,name,error:e.message}; }
+  }));
+  const failures=[];
+  results.forEach(r=>{
+    if(r.data) {DATA[r.key]=r.data;SOURCE_INFO[r.key]="URL";}
+    else failures.push(r.error);
+  });
+  refreshFilters();
+  refreshAnalytics();
+  zoomToData();
+  setLoading(false);
+  if(failures.length) {
+    setStatus("Partial load. "+failures.join(" | ")+" Upload the missing file(s) manually if necessary.","warn");
+  } else {
+    setStatus("All three datasets loaded successfully.","");
+  }
+}
+async function loadUploads() {
+  setLoading(true);
+  const inputs=[
+    ["ea","eaFile","Census EA"],
+    ["y13","y13File","Built-up 2013"],
+    ["y23","y23File","Built-up 2023"]
+  ];
+  const errors=[];
+  for(const [key,id,name] of inputs) {
+    const file=document.getElementById(id).files[0];
+    if(!file) continue;
+    try {
+      DATA[key]=await readLocalFile(file,name);
+      SOURCE_INFO[key]="Local file: "+file.name;
+    } catch(e) { errors.push(e.message); }
+  }
+  refreshFilters();
+  refreshAnalytics();
+  zoomToData();
+  setLoading(false);
+  if(errors.length) setStatus(errors.join(" | "),"error");
+  else if(inputs.every(([key,id])=>!document.getElementById(id).files[0])) {
+    setStatus("Select at least one local dataset before clicking Load selected local files.","warn");
+  } else {
+    setStatus("Selected local files loaded. Check dataset status for any missing datasets.");
+  }
+}
 
-/* ==================== UI EVENTS ==================== */
-$("reloadBtn").addEventListener("click",loadAllFromGitHub);
-$("saveUrlsBtn").addEventListener("click",loadAllFromGitHub);
+/* UI events */
+document.getElementById("loadBtn").addEventListener("click",loadRemote);
+document.getElementById("fetchBtn").addEventListener("click",loadRemote);
+document.getElementById("uploadBtn").addEventListener("click",loadUploads);
+document.getElementById("fitBtn").addEventListener("click",zoomToData);
+document.getElementById("resetBtn").addEventListener("click",resetFilters);
+document.getElementById("eaExportBtn").addEventListener("click",exportEA);
+document.getElementById("csvExportBtn").addEventListener("click",exportSummary);
+document.getElementById("regionFilter").addEventListener("change",()=>{
+  const r=document.getElementById("regionFilter").value;
+  const rows=(DATA.ea?.features||[]).filter(f=>!r||String(regionValue(f))===r);
+  populateSelect("districtFilter",rows.map(districtValue),"All districts");
+  populateSelect("wardFilter",rows.map(wardValue),"All wards");
+  refreshAnalytics();
+});
+document.getElementById("districtFilter").addEventListener("change",()=>{
+  const r=document.getElementById("regionFilter").value;
+  const d=document.getElementById("districtFilter").value;
+  const rows=(DATA.ea?.features||[]).filter(f=>
+    (!r||String(regionValue(f))===r)&&(!d||String(districtValue(f))===d));
+  populateSelect("wardFilter",rows.map(wardValue),"All wards");
+  refreshAnalytics();
+});
+document.getElementById("wardFilter").addEventListener("change",refreshAnalytics);
+["showEA","show13","show23","showChange"].forEach(id=>
+  document.getElementById(id).addEventListener("change",syncLayers)
+);
+document.getElementById("basemap").addEventListener("change",e=>{
+  Object.values(baseLayers).forEach(layer=>{if(map.hasLayer(layer))map.removeLayer(layer);});
+  (baseLayers[e.target.value]||baseLayers.osm).addTo(map);
+});
 
-$("regionSelect").addEventListener("change",()=>{
-  activeFilters.region=$("regionSelect").value;
-  activeFilters.district="";activeFilters.ward="";
-  syncFilters();
-});
-$("districtSelect").addEventListener("change",()=>{
-  activeFilters.district=$("districtSelect").value;
-  activeFilters.ward="";
-  syncFilters();
-});
-$("wardSelect").addEventListener("change",()=>activeFilters.ward=$("wardSelect").value);
+/* Initial blank charts and status */
+drawCharts(0,0,0,0);
+datasetStatus();
 
-$("applyFiltersBtn").addEventListener("click",()=>{
-  activeFilters.region=$("regionSelect").value;
-  activeFilters.district=$("districtSelect").value;
-  activeFilters.ward=$("wardSelect").value;
-  refreshAll();
-  fitToAvailableData();
-});
-$("clearFiltersBtn").addEventListener("click",()=>{
-  activeFilters={region:"",district:"",ward:""};
-  refreshAll();
-});
-["showEA","show2013","show2023","mapMode"].forEach(id=>$(id).addEventListener("change",applyDisplay));
-
-$("resetBtn").addEventListener("click",()=>{
-  activeFilters={region:"",district:"",ward:""};
-  $("showEA").checked=true;$("show2013").checked=true;$("show2023").checked=true;$("mapMode").value="both";
-  refreshAll();map.setView([13.45,-16.58],9);
-});
-$("zoomGambiaBtn").addEventListener("click",()=>map.setView([13.45,-16.58],9));
-$("fitDataBtn").addEventListener("click",fitToAvailableData);
-
-/* ==================== STARTUP ==================== */
-setStatus("Loading datasets from your GitHub repository…");
-loadAllFromGitHub();
+/* Attempt remote loading on startup. Local upload remains available if it fails. */
+window.addEventListener("load",()=>loadRemote());
 </script>
 </body>
 </html>
-
