@@ -821,7 +821,7 @@ function exportSummary() {
     ["Projection note",lastProjection]
   ];
   const csv=rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");
-  downloadFile("GBoS_GEOAI_BuiltUp_Summary.csv",csv,"text/csv;charset=utf-8");
+  downloadFile("SILKYSINGZ_GEOAI_BuiltUp_Summary.csv",csv,"text/csv;charset=utf-8");
 }
 async function loadRemote() {
   setLoading(true);
